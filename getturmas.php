@@ -76,10 +76,13 @@ Exam Scheduler By NIFEUP
 	
 	$xp = new DOMXpath($dom);
 	$nodes = $xp->query('//div[@class="curso-informacoes"]/div[2]/ul/li/a');
-	echo $nodes->item($i)->nodeValue;
-/*	
-	//TODO DAQUI PARA A FRENTE
-	//Post para vizualizar o plano https://sigarra.up.pt/feup/pt/cur_geral.cur_planos_estudos_view?pv_plano_id=2496&pv_ano_lectivo=2012
+	$str=$nodes->item(0)->attributes->getNamedItem("href")->nodeValue;
+	$j=strpos($str,'=')+1; //ir buscar o primeiro argumento do link
+	$plano_id=substr($str,$j,strpos($str,'&')-$j);
+	//echo  $plano_id;
+	
+	
+	//Post para vizualizar o plano 
 	$url= 'https://sigarra.up.pt/feup/pt/cur_geral.cur_planos_estudos_view';
 	$fieldstr = 'pv_plano_id='.$plano_id.'&pv_ano_lectivo='.$anoletivo;
     curl_setopt($ch,CURLOPT_URL,$url);
@@ -88,22 +91,29 @@ Exam Scheduler By NIFEUP
     $planoresult = curl_exec($ch);
 	
 	
-	//Parse para sacar os links	
+	//TODO DAQUI PARA A FRENTE
+	//Parse para sacar as cadeiras (ocurrencia) do semestre selecionado
 	$dom = new DOMDocument;
-	@$dom->loadHTML($turmasresult);
+	@$dom->loadHTML($planoresult);
 	
 	$xp = new DOMXpath($dom);
-	$nodes = $xp->query('//a[@class="t"]');
-	
-	
+	$nodes = $xp->query('//table/tr/td/table/tr/td/table');
+	echo $nodes->length;
+	//sacar sigla da cadeira e id da ocurrencia
 	for ($i=0;$i<$nodes->length;$i++)
 	{
-		$turma_nome=$nodes->item($i)->nodeValue;
-		$str=$nodes->item($i)->attributes->getNamedItem("href")->nodeValue;
-		$j=strpos($str,'=')+1;
-		$turma_id=substr($str,$j,strpos($str,'&')-$j);
-		//echo  "<p>".$turma_nome." ".$turma_id."</p>";
-		
+		$nodetable=$nodes->item($i);
+		$nodestr=$xp->query('./tr',$nodetable);
+		for ($j=2;$j<$nodestr->length;$j++)
+		{
+			$nodestd=$xp->query('./td',$nodestr->item($j));
+			$cadeira_sigla=$nodestd->item(1)->nodeValue;
+			//$str=$xp->query('./a',$nodestd->item(1))->item(0)->attributes->getNamedItem("href")->nodeValue;
+			//$k=strpos($str,'=')+1;
+			//$cadeira_ocurrencia=substr($str,$k,strpos($str,'&')-$k);
+			echo  "<p>".$cadeira_sigla." ".$cadeira_ocurrencia."</p>";
+		}
+		/*
 		//POST para sacar o horario
 		$url= 'https://sigarra.up.pt/feup/pt/hor_geral.turmas_view';
 		$fieldstr = 'pv_turma_id='.$turma_id.'&pv_periodos='.$periodo_id.'&pv_ano_lectivo='.$anoletivo; 
@@ -171,15 +181,15 @@ Exam Scheduler By NIFEUP
 			}
 			$hora=$hora+0.5;
 		}
-		
+		*/
 	}
-	*/
+	
 	
 	//fechar a sessao
     curl_close($ch);
 	$filename=''.$_POST['curso'].$_POST['anolectivo'].$_POST['periodo'].'.json';
 	//file_put_contents($filename,json_encode($horarios));
-	chmod($filename,0664);
+	//chmod($filename,0664);
 	//echo json_encode($horarios);
 
 ?>
