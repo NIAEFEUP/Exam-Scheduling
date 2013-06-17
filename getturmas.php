@@ -1,6 +1,6 @@
 <?php
 /*
-Timetable Selector By NIFEUP
+Exam Scheduler By NIFEUP
 @Author: Diogo Basto (ei09082@fe.up.pt)
 */
 
@@ -28,7 +28,7 @@ Timetable Selector By NIFEUP
 		case 'MIEIG': $curso_id='725';break;
 		case 'MIEM': $curso_id='743';break;
 		case 'MIEMM': $curso_id='744';break;
-		case 'MIEQ': $curso_id='745';break;
+		case 'MIEQ': $curso_id='745';break; 
 		default : echo 'Error';exit();
 	}
 	switch($_POST['periodo'])
@@ -45,7 +45,7 @@ Timetable Selector By NIFEUP
 	
 	
 	//Iniciar Sessao dos posts
-    $ch = curl_init();
+    $ch = curl_init(); 
 	curl_setopt($ch,CURLOPT_RETURNTRANSFER, true); 
 	curl_setopt($ch,CURLOPT_COOKIEJAR ,null); 
 	
@@ -57,13 +57,36 @@ Timetable Selector By NIFEUP
     curl_setopt($ch,CURLOPT_POSTFIELDS,$fieldstr);
     $loginresult = curl_exec($ch);
 	
-	//POST para sacar as turmas
-	$url= 'https://sigarra.up.pt/feup/pt/hor_geral.lista_turmas_curso';
-	$fieldstr = 'pv_curso_id='.$curso_id.'&pv_periodos='.$periodo_id.'&pv_ano_lectivo='.$anoletivo;
+	
+	
+	
+	
+	//POST para vizualizar o curso e ir buscar o plano de curso
+	$url= 'https://sigarra.up.pt/feup/pt/cur_geral.cur_view';
+	$fieldstr = 'pv_curso_id='.$curso_id.'&pv_ano_lectivo='.$anoletivo;
     curl_setopt($ch,CURLOPT_URL,$url);
     curl_setopt($ch,CURLOPT_POST,3);
     curl_setopt($ch,CURLOPT_POSTFIELDS,$fieldstr);
-    $turmasresult = curl_exec($ch);
+    $cursoresult = curl_exec($ch);
+	
+	
+	//Parse para ir buscar o ID do plano
+	$dom = new DOMDocument;
+	@$dom->loadHTML($cursoresult);
+	
+	$xp = new DOMXpath($dom);
+	$nodes = $xp->query('//div[@class="curso-informacoes"]/div[2]/ul/li/a');
+	echo $nodes->item($i)->nodeValue;
+/*	
+	//TODO DAQUI PARA A FRENTE
+	//Post para vizualizar o plano https://sigarra.up.pt/feup/pt/cur_geral.cur_planos_estudos_view?pv_plano_id=2496&pv_ano_lectivo=2012
+	$url= 'https://sigarra.up.pt/feup/pt/cur_geral.cur_planos_estudos_view';
+	$fieldstr = 'pv_plano_id='.$plano_id.'&pv_ano_lectivo='.$anoletivo;
+    curl_setopt($ch,CURLOPT_URL,$url);
+    curl_setopt($ch,CURLOPT_POST,3);
+    curl_setopt($ch,CURLOPT_POSTFIELDS,$fieldstr);
+    $planoresult = curl_exec($ch);
+	
 	
 	//Parse para sacar os links	
 	$dom = new DOMDocument;
@@ -150,12 +173,13 @@ Timetable Selector By NIFEUP
 		}
 		
 	}
+	*/
 	
 	//fechar a sessao
     curl_close($ch);
 	$filename=''.$_POST['curso'].$_POST['anolectivo'].$_POST['periodo'].'.json';
-	file_put_contents($filename,json_encode($horarios));
+	//file_put_contents($filename,json_encode($horarios));
 	chmod($filename,0664);
-	echo json_encode($horarios);
+	//echo json_encode($horarios);
 
 ?>
