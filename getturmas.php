@@ -90,16 +90,16 @@ Exam Scheduler By NIFEUP
     curl_setopt($ch,CURLOPT_POSTFIELDS,$fieldstr);
     $planoresult = curl_exec($ch);
 	
+	$cadeiras=array();
 	
-	//TODO DAQUI PARA A FRENTE
-	//Parse para sacar as cadeiras (ocurrencia) do semestre selecionado
+	
+	//Parse para sacar as cadeiras (ocurrencia) 
 	$dom = new DOMDocument;
 	@$dom->loadHTML($planoresult);
 	
 	$xp = new DOMXpath($dom);
-	$nodes = $xp->query('//table/tr/td/table/tr/td/table');
-	echo $nodes->length;
-	//sacar sigla da cadeira e id da ocurrencia
+	//cadeiras normais, sacar sigla da cadeira, id da ocurrencia e semestre
+	$nodes = $xp->query('//table/tr/td/table/tr/td[@width="50%"]/table');
 	for ($i=0;$i<$nodes->length;$i++)
 	{
 		$nodetable=$nodes->item($i);
@@ -107,13 +107,62 @@ Exam Scheduler By NIFEUP
 		for ($j=2;$j<$nodestr->length;$j++)
 		{
 			$nodestd=$xp->query('./td',$nodestr->item($j));
-			$cadeira_sigla=$nodestd->item(1)->nodeValue;
-			//$str=$xp->query('./a',$nodestd->item(1))->item(0)->attributes->getNamedItem("href")->nodeValue;
-			//$k=strpos($str,'=')+1;
-			//$cadeira_ocurrencia=substr($str,$k,strpos($str,'&')-$k);
-			echo  "<p>".$cadeira_sigla." ".$cadeira_ocurrencia."</p>";
+			$cadeira["sigla"]=$nodestd->item(1)->nodeValue;
+			if ($cadeira["sigla"]!=""){ //fazer esta confirmação
+				$str=$xp->query('./a',$nodestd->item(2))->item(0)->attributes->getNamedItem("href")->nodeValue;
+				$k=strpos($str,'=')+1;
+				$cadeira["ocurrencia"]=substr($str,$k);
+				$cadeira["semestre"]=$i%2 +1;
+				
+				//procurar repetidos (não é preciso no caso do MIEIC)
+				$fl=true;
+				foreach ($cadeiras as $cad)
+				{
+					if($cad["ocurrencia"]==$cadeira["ocurrencia"])
+					{
+						$fl=false;
+						break;
+					}
+				}
+				if ($fl) array_push($cadeiras,$cadeira);
+			}
 		}
-		/*
+	}
+	//cadeiras optativas, sacar sigla da cadeira, id da ocurrencia e semestre
+	$nodes = $xp->query('//div[@id]/table/tr/td/table');
+	for ($i=0;$i<$nodes->length;$i++)
+	{
+		$nodetable=$nodes->item($i);
+		$nodestr=$xp->query('./tr',$nodetable);
+		for ($j=1;$j<$nodestr->length;$j++)
+		{
+			$nodestd=$xp->query('./td',$nodestr->item($j));
+			$cadeira["sigla"]=$nodestd->item(1)->nodeValue;
+			if ($cadeira["sigla"]!=""){ //fazer esta confirmação
+				$str=$xp->query('./a',$nodestd->item(2))->item(0)->attributes->getNamedItem("href")->nodeValue;
+				$k=strpos($str,'=')+1;
+				$cadeira["ocurrencia"]=substr($str,$k);
+				if ($nodestd->item(5)->nodeValue=="1S")$cadeira["semestre"]=1;
+				else $cadeira["semestre"]=2;
+				//procurar repetidos (não é preciso no caso do MIEIC)
+				$fl=true;
+				foreach ($cadeiras as $cad)
+				{
+					if($cad["ocurrencia"]==$cadeira["ocurrencia"])
+					{
+						$fl=false;
+						break;
+					}
+				}
+				if ($fl) array_push($cadeiras,$cadeira);
+			}
+		}
+	}
+	
+	
+	
+	
+		/*código de sacar horários, aqui para referencia/ajuda
 		//POST para sacar o horario
 		$url= 'https://sigarra.up.pt/feup/pt/hor_geral.turmas_view';
 		$fieldstr = 'pv_turma_id='.$turma_id.'&pv_periodos='.$periodo_id.'&pv_ano_lectivo='.$anoletivo; 
@@ -182,14 +231,16 @@ Exam Scheduler By NIFEUP
 			$hora=$hora+0.5;
 		}
 		*/
-	}
+
 	
 	
 	//fechar a sessao
     curl_close($ch);
-	$filename=''.$_POST['curso'].$_POST['anolectivo'].$_POST['periodo'].'.json';
+	$json[cadeiras]=$cadeiras;
+	//$filename=''.$_POST['curso'].$_POST['anolectivo'].$_POST['periodo'].'.json';
 	//file_put_contents($filename,json_encode($horarios));
 	//chmod($filename,0664);
-	//echo json_encode($horarios);
-
+	
+	echo json_encode($json);
+	
 ?>
