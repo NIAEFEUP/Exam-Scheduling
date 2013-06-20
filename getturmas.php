@@ -104,7 +104,7 @@ Exam Scheduler By NIFEUP
 	{
 		$nodetable=$nodes->item($i);
 		$nodestr=$xp->query('./tr',$nodetable);
-		for ($j=2;$j<$nodestr->length;$j++)
+		for ($j=2;$j<$nodestr->length;$j++)//começar a 2, o 0 e 1 é o header da tabela
 		{
 			$nodestd=$xp->query('./td',$nodestr->item($j));
 			$cadeira["sigla"]=$nodestd->item(1)->nodeValue;
@@ -124,7 +124,37 @@ Exam Scheduler By NIFEUP
 						break;
 					}
 				}
-				if ($fl) array_push($cadeiras,$cadeira);
+				if ($fl) {
+					//Post para vizualizar o plano 
+					$url= 'https://sigarra.up.pt/feup/pt/it_listagem.lista_turma_disciplina';
+					$fieldstr = 'pv_curso_id='.$curso_id.'&pv_ocorrencia_id='.$cadeira["ocurrencia"].'&pv_ano_lectivo='.$anoletivo.'&pv_periodo_id='.$cadeira["semestre"];
+					curl_setopt($ch,CURLOPT_URL,$url);
+					curl_setopt($ch,CURLOPT_POST,3);
+					curl_setopt($ch,CURLOPT_POSTFIELDS,$fieldstr);
+					$alunosresult = curl_exec($ch);
+					$cadeira["alunos"]=array();
+
+
+					//Parse para sacar os alunos
+					$dom2 = new DOMDocument;
+					@$dom2->loadHTML($alunosresult);
+
+					$xp2 = new DOMXpath($dom2);
+					//ir buscar todas as turmas
+					$nodes2 = $xp2->query('//div[@id="conteudo"]/table');
+					for ($x=1;$x<$nodes2->length;$x++) //começar na tabela 1, o 0 é a lista das turmas
+					{
+						$nodetable2=$nodes2->item($x);
+						$nodestd=$xp2->query('./tr/td[2]',$nodetable2); //ir diretamente buscar o segundo TD de cada row
+						for ($y=0;$y<$nodestd->length;$y++) //começar a 0, a 1a row é não tem TDs logo não obdece à expressão
+						{
+							$aluno=$nodestd->item($y)->nodeValue;
+							array_push($cadeira["alunos"], $aluno);
+							
+						}
+					}
+					array_push($cadeiras,$cadeira);
+				}
 			}
 		}
 	}
@@ -134,7 +164,7 @@ Exam Scheduler By NIFEUP
 	{
 		$nodetable=$nodes->item($i);
 		$nodestr=$xp->query('./tr',$nodetable);
-		for ($j=1;$j<$nodestr->length;$j++)
+		for ($j=1;$j<$nodestr->length;$j++)//começar a 1, o 0 é o header da tabela
 		{
 			$nodestd=$xp->query('./td',$nodestr->item($j));
 			$cadeira["sigla"]=$nodestd->item(1)->nodeValue;
@@ -154,10 +184,76 @@ Exam Scheduler By NIFEUP
 						break;
 					}
 				}
-				if ($fl) array_push($cadeiras,$cadeira);
+				if ($fl) {
+					//Post para vizualizar o plano 
+					$url= 'https://sigarra.up.pt/feup/pt/it_listagem.lista_turma_disciplina';
+					$fieldstr = 'pv_curso_id='.$curso_id.'&pv_ocorrencia_id='.$cadeira["ocurrencia"].'&pv_ano_lectivo='.$anoletivo.'&pv_periodo_id='.$cadeira["semestre"];
+					curl_setopt($ch,CURLOPT_URL,$url);
+					curl_setopt($ch,CURLOPT_POST,3);
+					curl_setopt($ch,CURLOPT_POSTFIELDS,$fieldstr);
+					$alunosresult = curl_exec($ch);
+					$cadeira["alunos"]=array();
+
+
+					//Parse para sacar os alunos
+					$dom2 = new DOMDocument;
+					@$dom2->loadHTML($alunosresult);
+
+					$xp2 = new DOMXpath($dom2);
+					//ir buscar todas as turmas
+					$nodes2 = $xp2->query('//div[@id="conteudo"]/table');
+					for ($x=1;$x<$nodes2->length;$x++) //começar na tabela 1, o 0 é a lista das turmas
+					{
+						$nodetable2=$nodes2->item($x);
+						$nodestd=$xp2->query('./tr/td[2]',$nodetable2); //ir diretamente buscar o segundo TD de cada row
+						for ($y=0;$y<$nodestd->length;$y++) //começar a 0, a 1a row é não tem TDs logo não obdece à expressão
+						{
+							$aluno=$nodestd->item($y)->nodeValue;
+							array_push($cadeira["alunos"], $aluno);
+							
+						}
+					}
+					
+					array_push($cadeiras,$cadeira);
+				}
 			}
 		}
 	}
+	
+	
+	//percorrer as cadeiras obtidas e sacar lista de alunos
+	foreach ($cadeiras as $cad)
+	{
+		//Post para vizualizar o plano 
+		$url= 'https://sigarra.up.pt/feup/pt/it_listagem.lista_turma_disciplina';
+		$fieldstr = 'pv_curso_id='.$curso_id.'&pv_ocorrencia_id='.$cad["ocurrencia"].'&pv_ano_lectivo='.$anoletivo.'&pv_periodo_id='.$cad["semestre"];
+		curl_setopt($ch,CURLOPT_URL,$url);
+		curl_setopt($ch,CURLOPT_POST,3);
+		curl_setopt($ch,CURLOPT_POSTFIELDS,$fieldstr);
+		$alunosresult = curl_exec($ch);
+		$cad["alunos"]=array();
+
+
+		//Parse para sacar os alunos
+		$dom = new DOMDocument;
+		@$dom->loadHTML($alunosresult);
+
+		$xp = new DOMXpath($dom);
+		//ir buscar todas as turmas
+		$nodes = $xp->query('//div[@id="conteudo"]/table');
+		for ($i=1;$i<$nodes->length;$i++) //começar na tabela 1, o 0 é a lista das turmas
+		{
+			$nodetable=$nodes->item($i);
+			$nodestd=$xp->query('./tr/td[2]',$nodetable); //ir diretamente buscar o segundo TD de cada row
+			for ($j=0;$j<$nodestd->length;$j++) //começar a 0, a 1a row é não tem TDs logo não obdece à expressão
+			{
+				$aluno=$nodestd->item($j)->nodeValue;
+				$cad["alunos"][] = $aluno;
+				
+			}
+		}
+	}
+	
 	
 	
 	
@@ -240,7 +336,6 @@ Exam Scheduler By NIFEUP
 	//$filename=''.$_POST['curso'].$_POST['anolectivo'].$_POST['periodo'].'.json';
 	//file_put_contents($filename,json_encode($horarios));
 	//chmod($filename,0664);
-	
 	echo json_encode($json);
 	
 ?>
